@@ -13,6 +13,7 @@
 #' @param bycol a logical value specifies whether the summary will be by column or by row.
 #' @param pooledGroup a logical value specifies whether to pool all subgroups of column variable.
 #' @param keepEmptyGroup a logical value specifying whether should keep empty groups
+#' @param keepEmptyString a logical value specifying whether should keep empty string values in categorical variables.
 #' @param statistics a character specifies summary statistics for continuous row variables.
 #' @param cont a vector specifies whether each row variables is continuous.
 #' @param cate a vector specifies whether each row variables is categorical.
@@ -36,7 +37,7 @@
 # function to format data frame to baseline table -hungtt
 sstable.baseline.edit <- function(value, formula, data, bycol = TRUE, pooledGroup = FALSE, keepEmptyGroup = FALSE,
                                   statistics = "mean, median (Q1-Q3)", cont = NULL, cate = NULL, fullfreq = TRUE, digits = 1,
-                                  test = FALSE, pdigits = 3, pcutoff = 0.0001,
+                                  test = FALSE, pdigits = 3, pcutoff = 0.0001, keepEmptyString = T,
                                   chisq.test = FALSE, correct = FALSE, simulate.p.value = FALSE, B = 2000,
                                   workspace = 1000000, hybrid = FALSE, footer = NULL, flextable = FALSE, bg = "#F2EFEE") {
   ## get information from formula
@@ -149,9 +150,9 @@ sstable.baseline.edit <- function(value, formula, data, bycol = TRUE, pooledGrou
   # Remove duplicates and keep only the first occurrence
   value <- value %>%
     filter(!(V1 %in% varname)) %>%
-    filter(V1 != "- ") %>% #remove empty string -hungtt
     bind_rows(duplicates_to_keep)
 
+  if (!keepEmptyString) {value <- value %>% filter(V1 != "- ")}  #remove empty string -hungtt
   # arrange in order of appearing in formula argument and remove dummy column
   value <- value %>% arrange(value[[ncol(value)]])
   value <- value[, -ncol(value)]

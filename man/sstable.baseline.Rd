@@ -27,6 +27,7 @@ sstable.baseline(
   B = 2000,
   workspace = 1e+06,
   hybrid = FALSE,
+  keepEmptyString = FALSE,
   footer = NULL,
   flextable = FALSE,
   bg = "#F2EFEE",
@@ -79,6 +80,8 @@ If formula is in the form of x+y ~ a|z, the function will summary z with respect
 \item{workspace}{a parameter for fisher.test().}
 
 \item{hybrid}{a parameter for fisher.test().}
+
+\item{keepEmptyString}{a logical value specifying whether should keep empty string values in categorical variables.}
 
 \item{footer}{a vector of strings to be used as footnote of table.}
 

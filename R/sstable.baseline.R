@@ -13,6 +13,7 @@
 #' @param bycol a logical value specifies whether the summary will be by column or by row.
 #' @param pooledGroup a logical value specifies whether to pool all subgroups of column variable.
 #' @param keepEmptyGroup a logical value specifying whether should keep empty groups
+#' @param keepEmptyString a logical value specifying whether should keep empty string values in categorical variables.
 #' @param statistics a character specifies summary statistics for continuous row variables.
 #' @param cont a vector specifies whether each row variables is continuous.
 #' @param cat a vector specifies whether each row variables is categorical.
@@ -41,10 +42,10 @@ sstable.baseline <- function(formula, data, bycol = TRUE, pooledGroup = FALSE, k
                              digits.numeric = c("mean(x, na.rm = TRUE) > 10 ~ 0",
                                                  "mean(x, na.rm=T) > 1 & mean(x, na.rm=T) <= 10 ~ 1",
                                                  "mean(x, na.rm=T) <= 1 ~ 2"),
-                            digits.nonnumeric = c("!is.numeric(x) ~ 0"), digits.name = NULL,
+                             digits.nonnumeric = c("!is.numeric(x) ~ 0"), digits.name = NULL,
                              test = FALSE, pdigits = 3, pcutoff = 0.0001,
                              chisq.test = FALSE, correct = FALSE, simulate.p.value = FALSE, B = 2000,
-                             workspace = 1000000, hybrid = FALSE,
+                             workspace = 1000000, hybrid = FALSE, keepEmptyString = FALSE,
                              footer = NULL, flextable = FALSE, bg = "#F2EFEE", matrix.raw = FALSE) {
 
   ## get information from formula
@@ -391,7 +392,7 @@ sstable.baseline <- function(formula, data, bycol = TRUE, pooledGroup = FALSE, k
   if (matrix.raw) { tab <- value}
   else { tab <- sstable.baseline.edit(value = value, formula = formula, data =data, bycol = bycol, pooledGroup = pooledGroup , keepEmptyGroup = keepEmptyGroup,
                                       statistics = statistics, cont = cont, cat = cat, fullfreq = fullfreq, digits = digits,
-                                      test = test, pdigits = pdigits, pcutoff = pcutoff,
+                                      test = test, pdigits = pdigits, pcutoff = pcutoff, keepEmptyString = keepEmptyString,
                                       chisq.test = chisq.test, correct = correct, simulate.p.value = simulate.p.value, B = B,
                                       workspace = workspace, hybrid = hybrid, footer = footer, flextable = flextable, bg = bg)
   }
