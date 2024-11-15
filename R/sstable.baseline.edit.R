@@ -131,26 +131,8 @@ sstable.baseline.edit <- function(value, formula, data, bycol = TRUE, pooledGrou
 
   ## get variable name
   varname <- if (ncol(xlabel) == 1) getlabel(xlabel[, 1]) else getlabel(xlabel)
+  varname <- unique(varname)
 
-
-
-  # Initialize an empty vector to store labels or variable names
-  label_list <- character(length(varlist))
-
-  # Loop through the variables in varlist
-  for (i in seq_along(varlist)) {
-    var_name <- varlist[i]
-
-    # Retrieve the variable label if available
-    var_label <- attr(data[[var_name]], "label")
-
-    # Check if the variable has a label or use the variable name
-    if (!is.null(var_label) && var_label != "") {
-      label_list[i] <- var_label
-    } else {
-      label_list[i] <- var_name
-    }
-  }
   # update order of variable customize for sstable.baseline.edit - hungtt
   value <- as.data.frame(value)
   dummy_df <- data.frame(V1= varname, order =seq(1:length(varname))*1000)
@@ -159,7 +141,18 @@ sstable.baseline.edit <- function(value, formula, data, bycol = TRUE, pooledGrou
   for (i in 1:nrow(value))
     {if (is.na(value[i,ncol(value)])) {value[i,ncol(value)] <- (value[i-1,ncol(value)]) + 1}}
 
-  # Assuming "a" is your data frame
+  # Identify duplicated values in column V1 that are also in varname
+  duplicates_to_keep <- value %>%
+    filter(V1 %in% varname) %>%
+    distinct(V1, .keep_all = TRUE)
+
+  # Remove duplicates and keep only the first occurrence
+  value <- value %>%
+    filter(!(V1 %in% varname)) %>%
+    filter(V1 != "- ") %>% #remove empty string -hungtt
+    bind_rows(duplicates_to_keep)
+
+  # arrange in order of appearing in formula argument and remove dummy column
   value <- value %>% arrange(value[[ncol(value)]])
   value <- value[, -ncol(value)]
   value
