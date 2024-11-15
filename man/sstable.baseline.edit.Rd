@@ -19,6 +19,7 @@ sstable.baseline.edit(
   test = FALSE,
   pdigits = 3,
   pcutoff = 1e-04,
+  keepEmptyString = T,
   chisq.test = FALSE,
   correct = FALSE,
   simulate.p.value = FALSE,
@@ -58,6 +59,8 @@ If formula is in the form of x+y ~ a|z, the function will summary z with respect
 \item{pdigits}{a number specifies number of significant digits for p value.}
 
 \item{pcutoff}{a number specifies threshold value of p value to be displayed as "< pcutoff".}
+
+\item{keepEmptyString}{a logical value specifying whether should keep empty string values in categorical variables.}
 
 \item{chisq.test}{a logical value specifies whether Chi-squared test or Fisher's exact test will be used to compare between treatment arms.}
 
