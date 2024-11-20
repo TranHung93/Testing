@@ -110,6 +110,7 @@ contSummary <- function(x, statistics = NULL, digits = 1, n = TRUE) {
   # Replace statistical names with their calculated values
   for (stat_name in names(stat_list)) {
     stat_value <- stat_list[[stat_name]](x)
+    stat_value <- format(stat_value, nsmall = digits)
     statistics <- gsub(stat_name, stat_value, statistics)
   }
 
