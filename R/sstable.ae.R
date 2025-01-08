@@ -497,6 +497,11 @@ sstable.ae <- function(ae_data, fullid_data, group_data = NULL, id.var,
     # browser()
   }
 
+  ## move missing to bottom - hungtt
+  # Move the row with na.text in the first column to the bottom
+  df_bottom <- ae_value[!ae_value[,1] == na.text, ] # All rows except '(missing)'
+  ae_value <- rbind(df_bottom, ae_value[ae_value[,1] == na.text, ])
+  
   ## remove the dummy col -trinhdhk
   ae_value <- ae_value[,-(nlevels(ae_arm$arm)*2 + 2):-(nlevels(ae_arm$arm)*3+1)]
   ae_value <- as.matrix(ae_value) #convert back to matrix to avoid conflicts
