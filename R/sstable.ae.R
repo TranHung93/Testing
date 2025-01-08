@@ -578,7 +578,7 @@ sstable.ae <- function(ae_data, fullid_data, group_data = NULL, id.var,
     ### faces of header
     tab <- flextable::bold(tab, part = "header")
     ### background
-    tab <- flextable::bg(tab, i = seq(from = 1, to = nrow(value), by = 2), j = 1:length(header1), bg = bg, part = "body")
+    tab <- flextable::bg(tab, i = seq(from = 1, to = nrow(ae_value), by = 2), j = 1:length(header1), bg = bg, part = "body")
     ### border
     tabbd <- officer::fp_border(color="black", width = 1.5)
     tab <- flextable::border_remove(tab)
