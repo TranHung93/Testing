@@ -99,14 +99,14 @@ sstable.ae <- function(ae_data, fullid_data, group_data = NULL, id.var,
       out <- delete_part(out, part = "footer")
       out <- flextable::add_footer_lines(out,
                                          values = as_paragraph(
-                                           as_chunk("n episode", props = fp_text(bold = TRUE)),
+                                           as_chunk("n episode", props = fp_text_default(bold = TRUE)),
                                            as_chunk(": total number of events")
                                          )
       )
       
       out <- flextable::add_footer_lines(out,
                                          values = as_paragraph(
-                                           as_chunk("n patient", props = fp_text(bold = TRUE)),
+                                           as_chunk("n patient", props = fp_text_default(bold = TRUE)),
                                            as_chunk(": number of patients with at least one event")
                                          )
       )
@@ -588,14 +588,14 @@ sstable.ae <- function(ae_data, fullid_data, group_data = NULL, id.var,
     ## footer
     tab <- flextable::add_footer_lines(tab,
       values = as_paragraph(
-        as_chunk("n episode", props = fp_text(bold = TRUE)),
+        as_chunk("n episode", props = fp_text_default(bold = TRUE)),
         as_chunk(": total number of events")
       )
     )
     
     tab <- flextable::add_footer_lines(tab,
       values = as_paragraph(
-        as_chunk("n patient", props = fp_text(bold = TRUE)),
+        as_chunk("n patient", props = fp_text_default(bold = TRUE)),
         as_chunk(": number of patients with at least one event")
       )
     )
