@@ -602,9 +602,15 @@ sstable.ae <- function(ae_data, fullid_data, group_data = NULL, id.var,
     
     tab <- flextable::add_footer_lines(tab, "p-values are based on chi-square test if expected value under null hypothesis > 1 in each cell; otherwise Fisher’s exact test is used")
 
-    for (k in (1:length(footer))) {
-      tab <- flextable::add_footer_lines(tab, footer[k], top = FALSE)
-      tab <- flextable::merge_at(tab, i = k, j = 1:length(header1), part = "footer")
+    if (!is.null(footer))
+    {
+      for (k in (1:length(footer))) {
+        tab <- flextable::add_footer_lines(tab, footer[k], top = FALSE)
+        tab <- flextable::merge_at(tab,
+                                   i = k,
+                                   j = 1:length(header1),
+                                   part = "footer")
+      }
     }
 
     ## format
