@@ -94,7 +94,28 @@ sstable.ae <- function(ae_data, fullid_data, group_data = NULL, id.var,
     # browser()
     out <- ._do_rbind(tbl1, tbl2, header=c(1:(3+n.grade)))
     # rownames(out)[c(3,4,5,8)] <- 'section'
-    if (flextable) return(ss_flextable(out))
+    if (flextable) {
+      out <- ss_flextable(out)
+      out <- delete_part(out, part = "footer")
+      out <- flextable::add_footer_lines(out,
+                                         values = as_paragraph(
+                                           as_chunk("n episode", props = fp_text(bold = TRUE)),
+                                           as_chunk(": total number of events")
+                                         )
+      )
+      
+      out <- flextable::add_footer_lines(out,
+                                         values = as_paragraph(
+                                           as_chunk("n patient", props = fp_text(bold = TRUE)),
+                                           as_chunk(": number of patients with at least one event")
+                                         )
+      )
+      
+      out <- flextable::add_footer_lines(out, "p-values are based on chi-square test if expected value under null hypothesis > 1 in each cell; otherwise Fisher’s exact test is used")
+      
+      out <- flextable::add_footer_lines(out, footer)
+
+      return(out)}
     return(out)
   }
 
@@ -519,13 +540,13 @@ sstable.ae <- function(ae_data, fullid_data, group_data = NULL, id.var,
   }
 
   ### footer
-  footer <- c("**n episode**: total number of events",
-              "**n patient**: number of patients with at least one event",
-              if (any(value == "-")) "- : value cannot be estimated." else NULL,
-              if (test) {paste("p-values are based on",
-                               ifelse(chisq.test == FALSE, "Fisher's exact test",
-                                      "chi-square test if expected value under null hypothesis > 1 in each cell; otherwise Fisher’s exact test is used"))} else NULL,
-              footer)
+  # footer <- c("**n episode**: total number of events",
+  #             "**n patient**: number of patients with at least one event",
+  #             if (any(value == "-")) "- : value cannot be estimated." else NULL,
+  #             if (test) {paste("p-values are based on",
+  #                              ifelse(chisq.test == FALSE, "Fisher's exact test",
+  #                                     "chi-square test if expected value under null hypothesis > 1 in each cell; otherwise Fisher’s exact test is used"))} else NULL,
+  #             footer)
 
 
   if (matrix.raw) {tab <- ae_value}
@@ -565,8 +586,24 @@ sstable.ae <- function(ae_data, fullid_data, group_data = NULL, id.var,
     tab <- flextable::merge_v(tab, part = "header")
 
     ## footer
+    tab <- flextable::add_footer_lines(tab,
+      values = as_paragraph(
+        as_chunk("n episode", props = fp_text(bold = TRUE)),
+        as_chunk(": total number of events")
+      )
+    )
+    
+    tab <- flextable::add_footer_lines(tab,
+      values = as_paragraph(
+        as_chunk("n patient", props = fp_text(bold = TRUE)),
+        as_chunk(": number of patients with at least one event")
+      )
+    )
+    
+    tab <- flextable::add_footer_lines(tab, "p-values are based on chi-square test if expected value under null hypothesis > 1 in each cell; otherwise Fisher’s exact test is used")
+
     for (k in (1:length(footer))) {
-      tab <- flextable::add_footer(tab, V1 = footer[k], top = FALSE)
+      tab <- flextable::add_footer_lines(tab, footer[k], top = FALSE)
       tab <- flextable::merge_at(tab, i = k, j = 1:length(header1), part = "footer")
     }
 
