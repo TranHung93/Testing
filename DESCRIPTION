@@ -2,28 +2,23 @@ Package: C306
 Type: Package
 Title: Collection of useful R codes for data analysis from the Biostatistics group at OUCRU
 Version: 0.1.5-240715
-Author: Lam Phung Khanh
-Maintainer@R: 
-    c(
-        person(
-            given = "Khanh Lam",
-            family = "Phung",
-            role = c("author", "maintainer"),
-            email = "phungkhanhlam@gmail.com"),
-        person(
-            given = "Huu Khanh Trinh",
-            family = "Dong"
-            role = "maintainer",
-            email = "trindhk@oucru.org"),
-        person(
-            given = "Biostatistic Group",
-            role = "maintainer",
-            email = "biostatistics@oucru.org"
-        )
-    )
-Description: Collection of useful R codes for data analysis from the Biostatistics group at OUCRU
-    Use four spaces when indenting paragraphs within the Description.
-License: The MIT License (MIT)
+Authors@R: 
+    c(person(given = "Khanh Lam",
+             family = "Phung",
+             role = "aut",
+             email = "phungkhanhlam@gmail.com"),
+      person(given = "Huu Khanh Trinh",
+             family = "Dong",
+             role = "aut",
+             email = "trindhk@oucru.org"),
+      person(given = "Thai Hung",
+             family = "Tran",
+             role = c("aut", "cre"),
+             email = "hungtt@oucru.org"))
+Description: Collection of useful R codes for data analysis from the 
+    Biostatistics group at OUCRU. This package provides specialized 
+    functions for clinical research data.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends: 
@@ -49,7 +44,8 @@ Imports:
     survival,
     aod
 RoxygenNote: 7.3.2
-Suggests: knitr,
+Suggests: 
+    knitr,
     rmarkdown,
     huxtable
 VignetteBuilder: knitr
