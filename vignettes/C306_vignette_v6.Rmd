@@ -1,0 +1,760 @@
+---
+title: "Creating and Displaying a Baseline Table with sstable in C306 package"
+author: "Hung Tran"
+vignette: >
+  %\VignetteIndexEntry{Creating and Displaying a Baseline Table with `sstable.baseline` and `flextable`}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  word_document:
+    toc: yes
+  pdf_document:
+    includes:
+      in_header: header.tex
+    number_sections: yes
+    toc: yes
+  html_document:
+    theme: cerulean
+    toc: yes
+    toc_float: yes
+geometry: margin=2cm
+editor_options: 
+  chunk_output_type: inline 
+---
+
+```{r setup, include=FALSE, results="hide"}
+### proportional odds: https://www.rdatagen.net/post/2021-01-19-should-we-continue-recruiting-patients-an-application-of-bayesian-predictive-probabilities/
+rm(list = ls()[!ls()%in%c('project.dir', 'dummy')]) #clear everything up before work.
+knitr::opts_chunk$set( message = FALSE, warning = FALSE)
+options(tinytex.verbose = TRUE)
+```
+
+# Introduction
+
+This vignette demonstrates how to create a baseline table for a dataset using the `sstable.baseline` function and how to format the table using the `flextable` package in R. The baseline table summarizes various characteristics of the study population, often divided by a variable like treatment arms. By following the provided steps, users can efficiently generate and format their baseline tables for reporting and analysis.
+
+# Prerequisites
+
+Before proceeding, ensure that we have the `C306` (note C306 come with capital C), `flextable` and `dplyr` packages installed. If they are not installed, we can install them using the following commands:
+
+```{r}
+#install.packages("flextable")
+#install.packages("dplyr")
+#install.packages("devtools")
+#devtools::install_github("TranHung93/Testing@feature-rmst")
+
+```
+
+
+# Basic table
+Step-by-Step Guide\
+**Step 1: Load the Required Libraries**\
+First, load the necessary libraries, including flextable for creating flexible tables and dplyr for data manipulation.
+
+```{r}
+library(flextable)
+library(dplyr)
+library(C306) 
+```
+
+
+**Step 2: Read and Prepare the Data**\
+In this example, we read  the data from a file named baseline_data.csv which is in the folder extdata of the C306 package. The full explanation of the variables is shown in the index.
+```{r}
+# Get the path to the extdata directory
+extdata_path <- system.file("extdata", "baseline_data.csv", package = "C306")
+
+# Load the data
+baseline_data <- read.csv(extdata_path)
+
+```
+
+
+Ensure that the treatment arms are correctly labeled and set as factors. Note that the table will present the higher-level group followed by the lower-level group, ensuring that the treatment group is presented before the placebo.
+
+```{r}
+# Create a factor with custom levels
+baseline_data$Arm <- factor(
+  baseline_data$Arm, 
+  levels = c("Sham procedure", "Intrathecal treatment"),
+  labels = c("Sham procedure", "Intrathecal treatment"))
+```
+
+**Step 3: Create the Baseline Table**\
+Use the sstable.baseline function to create the baseline table. The formula argument specifies the variables to be included in the table, with subgroups specified based on the variable following the ~. The Arm variable indicates the treatment groups. Set the pooledGroup argument to FALSE to avoid having another column that summarizes the variables after pooling the treatment groups together, and set digits to 1 to format numeric values with one decimal place. Remember to set flextable argument to TRUE to ensure the output is a flextable-type table, allowing us to use flextable functions to edit our table more conveniently. If flextable argument is not specified, the package will set it FALSE by default and the output will be a matrix. For example, we would like to summarize the characteristics of age, sex, BMI, tetanus, ICU days, outcome, time to admission, max temperature, respiratory rate, FiO2, and SpO2 among treatment arm groups. The code would be as follows.
+
+```{r, echo = TRUE, results = 'asis'}
+formula <- age + sex + bmi + tetanus + icudays + outcome + timetoadm +
+            maxtemp + resp + fio2 + spo2 ~ Arm
+baseline.sstable <- sstable.baseline(
+  formula = formula,
+  data = baseline_data,
+  statistics = "Median (q1, q3)",
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue" #we can style our table with different color, if we do not specify this argument, it will be gray in color by default
+
+) 
+baseline.sstable 
+```
+
+
+
+**Step 4: Add Footnotes and Caption by functions in flextable**\
+Enhance the table by adding footnotes and a caption for better readability and understanding. The caption provides a brief description of the table's content. 
+
+```{r, echo = TRUE}
+
+baseline.sstable <- baseline.sstable %>%
+  set_caption(caption = 'Baseline characteristics of study population grouped by Treatment Arm.') #set_caption is a function in 'flextable' package to customize your table. You can use any other functions too. As baseline.sstable has been formated in flextable format by argument flextable = TRUE.
+
+```
+
+
+**Step 5: Display the Table**\
+Finally, display the formatted table using the print function.
+
+```{r, echo = TRUE}
+
+baseline.sstable
+
+```
+
+If we want to change the names appearing in the table to make them easier to understand, we could label them in the raw data first. The package will detect the label. If a label is not available, it will use the name of the variable.
+
+```{r}
+library(Hmisc) #call Hmisc package for labeling
+
+baseline_data <- baseline_data %>% 
+  mutate(
+    age = structure(age, label='Age'), #label to make capital letter
+    sex = structure(sex, label='Sex'),
+    bmi = structure(bmi, label='Body Mass Index'), #label to explain the variable
+    tetanus = structure(tetanus, label='Tetanus Confirmation'),
+    icudays = structure(icudays, label='Days in ICU'),
+    outcome = structure(outcome, label='Outcome'),
+    timetoadm = structure(timetoadm, label='Time to Admission'),
+    maxtemp = structure(maxtemp, label='Max Temperature'),
+    resp = structure(resp, label='Respiratory Rate'),
+    fio2 = structure(fio2, label='FiO2'),
+    spo2 = structure(spo2, label='SpO2'),
+    pao2 = structure(pao2, label='PaO2'),
+    wbc = structure(wbc, label='White Blood Cells'),
+    sofa = structure(sofa, label='SOFA')
+  )
+
+baseline_data$sex <- factor(baseline_data$sex, levels = c( "M", "F"), labels = c( "Male", "Female"))
+
+baseline.sstable <- sstable.baseline(
+  formula = age + sex + bmi + tetanus + icudays + outcome + timetoadm +
+            maxtemp + resp + fio2 + spo2 + pao2 + wbc + sofa ~ Arm,
+  data = baseline_data,
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue") %>% set_caption(caption = 'Baseline characteristics of study population grouped by Treatment Arm.')
+
+baseline.sstable
+```
+
+If we are interested in the characteristics of the whole sample as well, we can add a column for the whole sample by setting the argument pooledGroup = TRUE. In addition, we can change the number of decimal places to 2 by setting the argument digits = 2. We can show frequencies of the categorical variables for each values with their total frequencies (denominators) by adding argument fullfreq = TRUE. Let’s see how the table looks.
+
+```{r, echo = TRUE, results = 'asis'}
+
+baseline.sstable <- sstable.baseline(
+  formula = age + sex + bmi + tetanus + icudays + outcome + timetoadm +
+            maxtemp + resp + fio2 + spo2 ~ Arm,
+  data = baseline_data,
+  pooledGroup = TRUE, #column total is added
+  flextable = TRUE,
+  fullfreq = TRUE, # as you can see in the table above in in intrathecal group female was shown as 22, but in the table below female is being shown as 22/136.
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue")
+
+library(flextable)
+baseline.sstable <- baseline.sstable %>%
+  set_caption(caption = 'Baseline characteristics of study population grouped by Treatment Arm.')
+
+baseline.sstable
+
+
+```
+
+
+**Additional Tips**\
+Customization: The flextable package offers various customization options, such as adjusting column widths, changing text alignment, and adding colors. Refer to the flextable documentation for more details.
+Exporting: we can export the table to different formats (e.g., Word, HTML, PDF) using flextable's export functions, making it easier to include the table in reports and presentations.
+
+```{r}
+# Example: Export the table to a Word document
+save_as_docx(baseline.sstable, path = "baseline_table.docx")
+```
+
+Now that we know how to create a basic baseline table, we can try to create our own table with different variables in baseline_data for practice. If we are interested in creating a table with different subgroups, we can do that as well. As we can see below, we created a table grouped by gender.
+
+```{r, echo = TRUE}
+baseline.sstable <- sstable.baseline(
+  formula = age + bmi + tetanus + icudays + timetoadm + incubationperiod 
+          + maxtemp + resp + fio2 + spo2 + pao2 + wbc + sofa ~ sex,
+  data = baseline_data,
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "table for gender") %>% 
+  set_caption(caption = 'Baseline characteristics of study population grouped by Gender.')
+
+
+baseline.sstable
+
+```
+
+
+
+# Create the Baseline Table with Additional Options
+## Argument Continuous to assign variable type
+Please note that if we do not specify which variables are categorical and which are numerical, the package will set them by default. Any “continuous” or “count” variables with more than 5 unique values will be set as numerical variables and will follow the summarizing method for numerical variables, which will be discussed in more detail in the next section. Any “continuous” or “count” variables with 5 or fewer unique values, and “factor”, “character”, or “logical” variables, will be treated as categorical variables and will thus follow the summarizing method for categorical variables (ratio and percentage). If we wish to make any changes in the way of summarizing for any specific variables, we can do so by using the cont and cate arguments. Let’s take a look at the table below for an example. The pain_score here is being presented as a categorical variable in percentage form.
+
+```{r, echo = TRUE, results = 'asis'}
+baseline.sstable2 <- sstable.baseline(
+  formula = age + bmi + sex + pain_score  ~ Arm,
+  data = baseline_data,
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue"
+)
+
+baseline.sstable2
+```
+
+
+If we wish to summarize it using methods for numeric variables, we have to switch on the cont argument and specify that pain_score is continuous.  
+
+```{r, echo = TRUE, results = 'asis'}
+baseline.sstable <- sstable.baseline(
+  formula = bmi + age  + sex +  pain_score + aids ~ Arm,
+  data = baseline_data,
+  cont = c("Pain_score"), # assign your variables if they are continuous, put putting them here. 
+ 
+  digits.numeric =  c("mean(x, na.rm = TRUE) > 10 ~ 2", "sd(x, na.rm = TRUE) < 5 ~ 5") ,
+  digits.nonnumeric = c("length (unique(x)) > 10 ~ 2"),
+  digits.name = c('x == x ~ 3'),
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue")
+
+baseline.sstable
+
+
+```
+
+On the other hand, if we have a variable with more than 5 different values, such as a score of 6, it will be treated as a continuous variable by default. To report it as a categorical variable instead, we can use the 'cate' argument. Let's create a new variable named 'severity_scores' that ranges from 1 to 7. 'Severity_scores' will be treated as continuous by default, as shown below.
+
+```{r, echo = TRUE, results = 'asis'}
+baseline_data$severity_scores <- sample(1:7, nrow(baseline_data), replace = TRUE)
+
+baseline.sstable <- sstable.baseline(
+  formula = age + sex + severity_scores  ~ Arm,
+  data = baseline_data,
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue" )
+
+baseline.sstable
+```
+
+To report severity_scores as categorical variable, we use cate argument. 
+
+```{r, echo = TRUE, results = 'asis'}
+baseline.sstable <- sstable.baseline(
+  formula = age + sex + severity_scores  ~ Arm,
+  data = baseline_data,
+  cat = c("severity_scores"),
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue" )
+
+baseline.sstable
+```
+
+## Customize summarizing method for continuous variables
+We have several options to summarize our numerical variables. These include using the statistics argument with a customized string of desired summaries. If this argument is omitted, the default summaries "mean, median (Q1, Q3)" will be used.
+
+If your string contains specific keywords, the package will automatically detect and compute the corresponding statistics, replacing the keyword with the calculated value. Any other symbols or letters will remain unchanged. For instance, "mean" represents the mean, "median" represents the median, "sd" stands for standard deviation, "q1" denotes the first quartile, "q3" refers to the third quartile, "min" indicates the minimum value, and "max" represents the maximum value.
+
+The choice of which measures to use in summarizing the data should be based on the variable's characteristics. For further details, you can refer to the descriptive statistics section of OUCRU’s course "Introduction to Medical Statistics" or consult with an expert if necessary.
+
+**Note:** categorical variable will always be presented as ratio and percentage.
+Below is an example of using mean, sd, median, min and max.
+
+```{r}
+baseline.sstable <- sstable.baseline(
+ formula = age  ~ Arm,
+  data = baseline_data,
+  cont = c("Pain_score"),
+  statistics = "location mean with spread sd;\n or 50-percentile median plus range (min, max)", #here odd symbols are purposely written to show that the package can detect the format
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue")
+
+baseline.sstable <- baseline.sstable %>%
+  add_footer_lines(values = "Note: This table summarizes the baseline characteristics of the study population by treatment arm.") %>%
+  set_caption(caption = "Baseline Characteristics by Treatment Arm")
+
+baseline.sstable
+
+```
+
+if we would like to present them into two line, we can use line break code in the string. 
+
+```{r}
+baseline.sstable <- sstable.baseline(
+ formula = age + sex ~ Arm,
+  data = baseline_data,
+  cont = c("Pain_score"),
+  statistics = "mean (SD) \nmedian (min, max)", 
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue")
+
+baseline.sstable <- baseline.sstable %>%
+  add_footer_lines(values = "Note: This table summarizes the baseline characteristics of the study population by treatment arm.") %>%
+  set_caption(caption = "Baseline Characteristics by Treatment Arm")
+
+baseline.sstable
+
+```
+
+In cases we need to display a complex table with different summarizing methods for different variables, we could call flextable = FALSE to obtain a matrix. Then we bind them together using rbind. See example below: 
+
+```{r}
+baseline.sstable1 <- sstable.baseline(
+  formula = age + sex + pain_score  ~ Arm,
+  data = baseline_data,
+  cont = c("Pain_score"),
+  pooledGroup = FALSE,
+  flextable = F,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue" ,
+  test= TRUE)
+
+baseline.sstable2 <- sstable.baseline(
+  formula = bmi  ~ Arm,
+  data = baseline_data,
+  cont = c("bmi"), 
+  statistics = "Mean (sd)",
+  pooledGroup = FALSE,
+  flextable = F,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue" ,
+  test= TRUE)
+baseline.sstable1
+baseline.sstable2
+```
+Now, we bind them together and reformat the combined table to flextable using ss_flextable function in C306 package.
+
+```{r}
+combined.table <- rbind(baseline.sstable2 , baseline.sstable1, footer = NULL) 
+baseline.sstable
+ss.combined.table <- ss_flextable(combined.table)
+ss.combined.table
+```
+
+We can add more detail footnotes using footnote function from flextable package.
+```{r}
+ss.combined.table <- ss.combined.table %>%
+  footnote(
+    i = c(1, 2), j = 3,
+    value = as_paragraph(
+      c("mean (SD)", "mean, median (Q1-Q3)")
+    ),
+    ref_symbols = c("a", "b"),
+    part = "body"
+  ) %>%
+  footnote(
+    i = c(1), j = 6,
+    value = as_paragraph(
+      "p-values were based on Fisher's exact test comparing n patient between study arms for each type of adverse event"
+    ),
+    ref_symbols = "c",
+    part = "body"
+  )
+
+                      
+ss.combined.table
+
+```
+
+# Create adverse event table 
+Now, we will create a table for adverse events. We assume that adverse event information is collected from the any_ae data frame and the baseline information is from baseline_data.
+```{r}
+# Get the path to the extdata directory
+extdata_path <- system.file("extdata", "ae_data.csv", package = "C306")
+
+# Load the data
+any_ae <- read.csv(extdata_path)
+```
+
+The function we use to create the adverse event table is sstable.ae with the following arguments:
+ae_data: Data that contains adverse event data. (Example: any_ae). In this data set, there are: a variable named "usubjid" which contains the patients' id, a variable named "ctcaename" which contains specific names of adverse events, a variable named "ctcaegrade" which contains the grade of adverse events.
+fullid_data: Data that contains treatment arm data of all participants (not just those who had adverse events). (Example: baseline_data)
+id.var: A character string specifying the name of the study ID variable (should exist in both the adverse event data and the treatment arm data). (Example: usubjid)
+aetype.var: A character string specifying the name of the adverse event type variable (exists in the adverse event data). (Example: ctcaename)
+grade.var: NULL or a character string specifying the name of the adverse event grade variable (exists in the adverse event data). (Example: original_ctcaegrade)
+arm.var: A character string specifying the name of the treatment arm variable (exists in the treatment arm data). (Example: Arm)
+test: a logical value specifies whether a statistical test will be performed to compare between treatment arms.
+test.anyae.only: a logical value specifies whether a statistical test will be performed for all variable or only for any adverse events.
+sort.by: Arrange the adverse event names in ascending order of the total observed number of episodes with that adverse event, number of patients with that adverse event or p-value (+ep, +pt, +p for episodes, patients, p-value) and descending order of the number of selected measures (-ep, -pt, -p for episodes, patients, p-value). Note: the signs (-/+) must directly precede p, ep, and pt without any spaces.
+We can add a test argument to sstable.ae, just like in sstable.baseline.
+
+Note: Pearson’s chi-square test of independence (chisq) or Fisher’s test is useddepending on the expected number under the null hypothesis (Fisher if any <1) Now, let’s create our adverse event table.
+
+```{r}
+ae_table <- sstable.ae(
+  ae_data = any_ae,
+  fullid_data = baseline_data,
+  id.var = "usubjid",
+  aetype.var = "ctcaename", #the variable contains names of adverse events (Common Terminology Criteria for Adverse Event names)in any_ae data frame
+  grade.var = "original_ctcaegrade",
+  arm.var = "Arm",
+  sort.by = ~ -ep -pt, # arrange in order of descending for episodes and patients.
+  digits = 2,
+  test = TRUE,#if we would like, to make a test to compare among the treatment arm group then specify this argument TRUE, otherwise choose FALSE
+  pdigits = 3,
+  pcutoff = 0.001,
+  chisq.test = TRUE, #choose TRUE for chi-square test and FALSE for Fisher, note that Fisher will be used even if chisq be selected for those expected value <1
+  footer = c("Example footnote for adverse event summary table."),
+  flextable = TRUE,
+  bg = "#F2EFEE"
+)
+
+
+ae_table
+
+```
+
+Let’s make a table to summarize the adverse events based on their relatedness to the treatment and whether the adverse event is expected to  appear, represented by the posreluntrl and unexp variables. We can rename the variables so they appear more readable in the table. If we don’t relabel the variables in the function, it will use the label in the data frame if any, and the variable name if no label is present. See below:
+```{r}
+ae_table <- sstable.ae(
+  ae_data = any_ae,
+  fullid_data = baseline_data,
+  id.var = "usubjid",
+   aetype.var = c("Relatedness to treatment" ='posrelunrel', "Unexpected AEs" =  'unexp'),#change to posrelunrel variable: variable that classifies whether adverse events are possible related to treatments, related to treatments or unrelated to treatments, unrel means unrelated, posrel means possibly related, and rel means related
+  grade.var = NULL, #set null to disable the summary of grade
+  arm.var = "Arm",
+  sort.by = ~ -ep -pt, # arrange in order of descending for episodes and patients.
+  digits = 2,
+  test = TRUE,
+  pdigits = 3,
+  pcutoff = 0.001,
+  footer = c("Example footnote for adverse event summary table."),
+  flextable = TRUE,
+  bg = "#F2EFEE"
+)
+
+
+ae_table
+```
+
+Here is an example if you label variables in the data frame. In this case, the unexp variable does not have a label, so the table will show unexp as it is. We can show the p-value for all rows if we specify test.anyae.only = FALSE. 
+
+```{r}
+# Define labels
+labels <- c("Relatedness to treatment")
+
+# Assign labels using structure
+any_ae$posrelunrel <- structure(any_ae$posrelunrel, label = labels[1])
+
+
+ae_table <- sstable.ae(
+  ae_data = any_ae,
+  fullid_data = baseline_data,
+  id.var = "usubjid",
+  aetype.var = c("posrelunrel", "unexp"), 
+  grade.var = "original_ctcaegrade", 
+  arm.var = "Arm",
+  sort.by = ~ +p -ep -pt, # arrange in order of ascending for p_value and descending for episodes and patients.
+  digits = 2,
+  test = TRUE,
+  test.anyae.only = FALSE, #show p value for all of the rows
+  pdigits = 3,
+  pcutoff = 0.001,
+  chisq.test = TRUE,
+  footer = c("Example footnote for adverse event summary table."),
+  flextable = T,
+  bg = "#F2EFEE"
+)
+
+ae_table
+```
+
+We can also classify the adverse events into groups. Assume that the information for classifying adverse events is in the classification data frame.
+```{r}
+# Get the path to the extdata directory
+extdata_path <- system.file("extdata", "group_data.csv", package = "C306")
+classification <- read.csv(extdata_path)
+
+```
+
+In the data frame named classification, there are two variables, namely ctcaename and class. We can add the classification to the table by specifying a reference data frame that contains the group name of each adverse event using the argument group_data = classification, and indicating the variable that contains the name of the classification using the argument group.var = "class".
+
+```{r}
+ae_table <- sstable.ae(
+  ae_data = any_ae,
+  fullid_data = baseline_data,
+  group_data = classification,
+  id.var = "usubjid",
+  aetype.var = c("ctcaename"), 
+  grade.var = NULL,
+  arm.var = "Arm",
+  group.var = "class",
+  sort.by = ~ +p -ep -pt,
+  digits = 2,
+  test = TRUE,
+  pdigits = 3,
+  pcutoff = 0.001,
+  chisq.test = FALSE,
+  # footer = c("Example footnote for adverse event summary table."),
+  flextable = TRUE,
+  bg = "#F2EFEE"
+)
+
+
+ae_table
+
+```
+
+If we are interested in 'Respiratory' and 'Neurological' adverse events, we can prioritize these groups in the table by factoring them. See the example below:
+```{r}
+categories <- c("Respiratory" , "Neurological", "Hematologic", "Digestive", 
+                "Endocrine", "Metabolic", "General", "Allergic", 
+                "Cardiovascular", "Urinary", "Musculoskeletal", "Skin", 
+                "Infectious")
+
+classification$class <- factor(classification$class, levels = categories)
+
+ae_table <- sstable.ae(
+  ae_data = any_ae,
+  fullid_data = baseline_data,
+  group_data = classification,
+  id.var = "usubjid",
+  aetype.var = "ctcaename", 
+  grade.var = "original_ctcaegrade",
+  arm.var = "Arm",
+  group.var = "class",
+  sort.by = ~ +p -ep -pt,
+  digits = 2,
+  test = TRUE,
+  pdigits = 3,
+  pcutoff = 0.001,
+  chisq.test = FALSE,
+  footer = c("Example footnote for adverse event summary table."),
+  flextable = TRUE,
+  bg = "#F2EFEE"
+)
+
+
+ae_table
+```
+
+If we don't have an adverse event dictionary but there is a group variable in the any_ae data itself, you can still specify the group.var argument and leave the group_data as NULL. The package will automatically detect the group.var in the any_ae data.
+
+```{r}
+#add column name class into any_ae by merging the data frame any_ae with classsification
+any_ae <- merge(any_ae, classification, by = "ctcaename", all.x = TRUE)
+
+
+#set argument group_data as NULL
+ae_table <- sstable.ae(
+  ae_data = any_ae,
+  fullid_data = baseline_data,
+  group_data = NULL, 
+  id.var = "usubjid",
+  aetype.var = c("ctcaename"), 
+  grade.var = NULL,
+  arm.var = "Arm",
+  group.var = "class",
+  sort.by = ~ +p -ep -pt,
+  digits = 2,
+  test = TRUE,
+  pdigits = 3,
+  pcutoff = 0.001,
+  chisq.test = FALSE,
+  footer = c("Example footnote for adverse event summary table."),
+  flextable = TRUE,
+  bg = "#F2EFEE"
+)
+
+
+ae_table
+
+```
+
+If an adverse event is misclassified into another group, resulting in one adverse event being classified into two different groups, the package will display a warning and list all the misclassified adverse events along with their respective groups. See the example below on how the error will be detected and displayed:
+
+```{r}
+any_ae$class <- as.character(any_ae$class)
+any_ae[4, "class"] <- "Accidental entry" #create a mistake in class
+any_ae [12, "class"] <- "Hematologics"
+
+ae_table <- sstable.ae(
+  ae_data = any_ae,
+  fullid_data = baseline_data,
+  group_data = NULL, 
+  id.var = "usubjid",
+  aetype.var = c("ctcaename"), 
+  grade.var = NULL,
+  arm.var = "Arm",
+  group.var = "class",
+  sort.by = ~ +p -ep -pt,
+  digits = 2,
+  test = TRUE,
+  pdigits = 3,
+  pcutoff = 0.001,
+  chisq.test = FALSE,
+  footer = c("Example footnote for adverse event summary table."),
+  flextable = TRUE,
+  bg = "#F2EFEE"
+)
+
+
+ae_table
+```
+
+
+
+**Conclusion**\
+By following these steps, we can create a detailed and well-formatted baseline table and ae table to summarize the characteristics and adverse events of our study population, separately by subgroups of a variable (E.g treatment arms). These tables provide a clear and concise overview of the data, facilitating better understanding and interpretation of the study results.
+
+# Index
+## Explanation of variables in baseline_data
+**usubjid**: id of patient
+**age**: The number of years a person has lived. \
+**sex**: The biological classification of an individual as male or female. \
+**bmi**: Body Mass Index, a measure of body fat based on height and weight. \
+**source**: The origin or cause of an individual's medical condition or data. \
+**tetanus**: A bacterial infection characterized by muscle spasms. \
+**icudays**: The number of days a patient spends in the Intensive Care Unit. \
+**outcome**: The final status of a patient's health after treatment. \
+**hypertension**: A condition where blood pressure is consistently too high. \
+**myocardialinfart**: Myocardial infarction, commonly known as a heart attack. \
+**angina**: Chest pain due to reduced blood flow to the heart muscles. \
+**perivascular**: Relating to the tissues surrounding a blood vessel. \
+**chronicpul**: Chronic pulmonary disease, long-term lung conditions. \
+**connectivetissue**: Diseases affecting the tissues that support organs and other parts of the body. \
+**mildliver**: Mild liver disease, a less severe form of liver disease. \
+**hemiplegia**: Paralysis of one side of the body. \
+**diawithchronic**: Diabetes with chronic complications. \
+**severeliver**: Severe liver disease, a critical form of liver disease. \
+**aids**: Acquired Immunodeficiency Syndrome, a chronic immune system condition. \
+**cardiacfailureiii**: Stage III cardiac failure, severe heart failure. \
+**cerebrovascular**: Relating to the blood vessels of the brain. \
+**severeresp**: Severe respiratory disease. \
+**pepticulcer**: A sore that develops on the lining of the stomach, small intestine, or esophagus. \
+**diabetes**: A group of diseases that result in too much sugar in the blood. \
+**severekidney**: Severe kidney disease. \
+**malignancy**: The presence of cancerous cells that can spread to other parts of the body. \
+**tumour**: An abnormal growth of tissue. \
+**dementia**: A group of conditions characterized by impairment of at least two brain functions, such as memory loss and judgment. \
+**renalfailure**: A condition in which the kidneys fail to adequately filter waste products from the blood. \
+**electivesurgery**: Non-emergency surgery that is scheduled in advance. \
+**emergencysurgery**: Urgent surgery that is performed immediately. \
+**timetoadm**: Time to admission, the period between the onset of symptoms and hospital admission. \
+**incubationperiod**: The period between exposure to an infection and the appearance of the first symptoms. \
+**incuperiodonset**: Onset of symptoms during the incubation period. \
+**wound**: An injury to living tissue caused by a cut, blow, or other impact. \
+**diffbreath**: Difficulty breathing. \
+**ablettscore**: Ablett score, a scale used to measure the severity of a clinical condition. \
+**asa**: American Society of Anesthesiologists score, a classification system for assessing the fitness of patients before surgery. \
+**maxtemp**: Maximum temperature recorded. \
+**resp**: Respiratory rate, the number of breaths taken per minute. \
+**fio2**: Fraction of inspired oxygen, the percentage of oxygen in the air mixture that is inhaled. \
+**spo2**: Peripheral capillary oxygen saturation, an estimate of the amount of oxygen in the blood. \
+**pao2**: Partial pressure of oxygen in arterial blood. \
+**ph**: A measure of acidity or alkalinity of the blood. \
+**plt**: Platelet count, a measure of the number of platelets in the blood. \
+**wbc**: White blood cell count, a measure of the number of white blood cells in the blood. \
+**hct**: Hematocrit, the ratio of the volume of red blood cells to the total volume of blood. \
+**maxhr**: Maximum heart rate recorded. \
+**minhr**: Minimum heart rate recorded. \
+**maxsbp**: Maximum systolic blood pressure recorded. \
+**worstdbp**: Worst diastolic blood pressure recorded. \
+**worstsbp**: Worst systolic blood pressure recorded. \
+**vaso**: Use of vasopressors, medications that constrict blood vessels and raise blood pressure. \
+**na**: Sodium level in the blood. \
+**k**: Potassium level in the blood. \
+**creat**: Creatinine level in the blood, an indicator of kidney function. \
+**apacheii**: Acute Physiology And Chronic Health Evaluation II, a severity-of-disease classification system. \
+**sofa**: Sequential Organ Failure Assessment, a score to track a person's status during the stay in an ICU. \
+**tss**: Total Severity Score, a measure of overall disease severity. \
+**Arm**: Group assignment in a clinical trial or study. \
+
+## Explanation of variables in any_ae 
+**usubjid**: id of patient\
+**ctcaename**: name of the adverse event\
+**ctcaegrade**: adverse event grade\
+**original_ctcaegrade**: original adverse event grade\
+**posrelunrel**: whether adverse event is related, possibly related or unrelated to treatment\
+**unexp**: whether adverse event is unexpected or not\
+
+```{r}
+baseline.sstable1 <- sstable.baseline(
+  formula = age + sex + pain_score  ~ Arm,
+  data = baseline_data,
+  cont = c("Pain_score"), # assign your variables if they are continuous, put putting them here.
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue" ,
+  test= TRUE,
+  matrix.raw = TRUE)
+
+baseline.sstable2 <- sstable.baseline(
+  formula = bmi  ~ Arm,
+  data = baseline_data,
+  cont = c("Pain_score"), # assign your variables if they are continuous, put putting them here.
+  statistics = "Mean (sd)",
+  pooledGroup = FALSE,
+  flextable = TRUE,
+  footer = "we can add any note here and it will appear at the bottom of the table",
+  bg = "lightblue" ,
+  test= TRUE,
+  matrix.raw = TRUE)
+baseline.sstable1 <- as.data.frame(baseline.sstable1)
+baseline.sstable2 <- as.data.frame(baseline.sstable2)
+formula = age + bmi + sex + pain_score ~ Arm
+baseline.sstable <- union( baseline.sstable2 , baseline.sstable1)
+baseline.sstable
+
+```
+```{r}
+table <- sstable.baseline.edit(value=baseline.sstable, data = baseline_data, formula = formula, flextable = TRUE, test = TRUE)
+table <- table %>%
+  delete_part(part ="footer") 
+
+table <- table %>%
+  footnote(
+    i = c(1, 2), j = 3,
+    value = as_paragraph(
+      c("mean (SD)", "mean, median (Q1-Q3)")
+    ),
+    ref_symbols = c("a", "b"),
+    part = "body", inline = TRUE
+  ) %>%
+  footnote(
+    i = c(1), j = 6,
+    value = as_paragraph(
+      "p-values were based on Fisher's exact test comparing n patient between study arms for each type of adverse event"
+    ),
+    ref_symbols = "c",
+    part = "body"
+  )
+table
+```
+
